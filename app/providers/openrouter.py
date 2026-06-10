@@ -143,7 +143,7 @@ class OpenRouterProvider(TranslationProvider):
         self.model: str = (
             model
             or self._get_env("OPENROUTER_MODEL")
-            or cfg.ollamcloud_model
+            or cfg.ollamacloud_model
             or _DEFAULT_MODEL
         )
         self.max_retries: int = max_retries or _DEFAULT_MAX_RETRIES

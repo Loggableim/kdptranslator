@@ -9,6 +9,7 @@ convenient one-stop entry point for the UI layer.
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any, Callable, Dict, List, Optional
 
 from app.core.config import TranslationConfig
@@ -177,6 +178,10 @@ class TranslationService:
     ) -> Dict[str, bool]:
         """Translate the loaded EPUB into one or more target languages.
 
+        Each language is translated from the **original** EPUB content.
+        A fresh :class:`EpubProcessor` is created per language so that
+        earlier translations never contaminate later ones.
+
         Parameters
         ----------
         analysis:
@@ -205,21 +210,67 @@ class TranslationService:
                 "No EPUB loaded. Call analyze_epub() before start_translation()."
             )
 
-        # Re-ensure the processor is wired (in case the user replaced it)
-        self.scheduler.epub_processor = self._epub_processor
-
         logger.info(
             "Starting translation for %d language(s): %s",
             len(confirmations),
             list(confirmations.keys()),
         )
 
-        return self.scheduler.translate_all(
-            epub_analysis=analysis,
-            confirmations=confirmations,
-            on_progress=on_progress,
-            on_agent_update=on_agent_update,
-        )
+        results: Dict[str, bool] = {}
+
+        # Share the cancellation flag across all per-language schedulers
+        # so that cancel_all() stops all in-flight work.
+        cancel_flag = self.scheduler._cancel_flag
+
+        for lang, confirmation in confirmations.items():
+            if cancel_flag.is_set():
+                logger.warning(
+                    "Skipping language '%s' — cancellation in progress", lang
+                )
+                results[lang] = False
+                continue
+
+            logger.info("Starting translation for language '%s'", lang)
+
+            # 1. Create a fresh EpubProcessor from the original file so
+            #    this language translates the ORIGINAL content, not a
+            #    previously-mutated version.
+            processor = EpubProcessor(self._current_filepath)
+            processor.get_chapters()
+
+            # 2. Create a temporary scheduler wired to the fresh processor
+            temp_scheduler = TranslationScheduler(
+                agent_pool=self.agent_pool,
+                chunker_module=None,
+                html_translator_module=None,
+                epub_processor=processor,
+            )
+            temp_scheduler.set_provider(self._provider)
+            # Share the same cancellation event so cancel_all() works
+            temp_scheduler._cancel_flag = cancel_flag
+
+            # 3. Run translation on the fresh processor
+            ok = temp_scheduler.schedule_translation(
+                epub_analysis=analysis,
+                target_language=lang,
+                title_confirmation=confirmation,
+                on_progress=on_progress,
+                on_agent_update=on_agent_update,
+            )
+            results[lang] = ok
+
+            logger.info(
+                "Translation for language '%s' %s",
+                lang,
+                "succeeded" if ok else "failed",
+            )
+
+            # 4. Update internal state so that save_translated_epub()
+            #    can write the most recently translated version.
+            self._epub_processor = processor
+            self.scheduler.epub_processor = processor
+
+        return results
 
     # ------------------------------------------------------------------
     # Save

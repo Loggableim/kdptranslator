@@ -14,7 +14,7 @@ from typing import Optional
 from app.core.logger import get_view_handler, LogViewHandler
 
 
-class LogView(ft.UserControl):
+class LogView(ft.Column):
     """A scrollable, auto-updating log terminal.
 
     Call :meth:`refresh` periodically (e.g. via a :class:`ft.Timer` or a page
@@ -41,7 +41,9 @@ class LogView(ft.UserControl):
         self._all_lines: list[str] = []
         self._view_handler: Optional[LogViewHandler] = None
 
-    def build(self) -> ft.Column:
+        self._build_inner()
+
+    def _build_inner(self) -> None:
         """Build the log display column."""
         header = ft.Row(
             controls=[
@@ -51,21 +53,19 @@ class LogView(ft.UserControl):
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
-        return ft.Column(
-            controls=[
-                header,
-                ft.Container(
-                    content=self._log_listview,
-                    border=ft.border.all(1, ft.Colors.GREY_400),
-                    border_radius=5,
-                    padding=5,
-                    expand=True,
-                    bgcolor=ft.Colors.BLACK,
-                ),
-            ],
-            spacing=5,
-            expand=True,
-        )
+        self.controls = [
+            header,
+            ft.Container(
+                content=self._log_listview,
+                border=ft.border.all(1, ft.Colors.GREY_400),
+                border_radius=5,
+                padding=5,
+                expand=True,
+                bgcolor=ft.Colors.BLACK,
+            ),
+        ]
+        self.spacing = 5
+        self.expand = True
 
     # ------------------------------------------------------------------
     # Public API

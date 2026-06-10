@@ -124,7 +124,7 @@ class OllamaCloudProvider(TranslationProvider):
         self._base_url: str = (
             base_url or config.ollamacloud_base_url
         ).rstrip("/")
-        self._model: str = model or config.ollamcloud_model
+        self._model: str = model or config.ollamacloud_model
         self._max_retries: int = (
             max_retries if max_retries is not None else translation_config.max_retries
         )

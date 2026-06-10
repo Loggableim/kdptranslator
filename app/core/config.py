@@ -25,7 +25,7 @@ class AppConfig:
     def __init__(self) -> None:
         self._ollamacloud_api_key: Optional[str] = None
         self._ollamacloud_base_url: str = "http://localhost:11434"
-        self._ollamcloud_model: str = "llama3"
+        self._ollamacloud_model: str = "llama3"
         self._log_level: str = "INFO"
         self._log_file: Path = self.LOGS_DIR / "app.log"
 
@@ -54,7 +54,7 @@ class AppConfig:
             or os.getenv("OPENAI_BASE_URL")
             or "http://localhost:11434"
         )
-        cfg._ollamcloud_model = (
+        cfg._ollamacloud_model = (
             os.getenv("OLLAMACLOUD_MODEL")
             or os.getenv("LLM_MODEL")
             or "llama3"
@@ -87,9 +87,9 @@ class AppConfig:
         return self._ollamacloud_base_url
 
     @property
-    def ollamcloud_model(self) -> str:
+    def ollamacloud_model(self) -> str:
         """Model identifier used for LLM calls (e.g. llama3, gpt-4)."""
-        return self._ollamcloud_model
+        return self._ollamacloud_model
 
     @property
     def log_level(self) -> str:

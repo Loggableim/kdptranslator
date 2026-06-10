@@ -26,7 +26,6 @@ from app.core.validation import are_all_titles_confirmed, is_translation_ready
 from app.providers.base import TranslationProvider
 from app.providers.mock import MockTranslationProvider
 from app.providers.ollamacloud import OllamaCloudProvider
-from app.providers.openrouter import OpenRouterProvider
 from app.services.title_generator import TitleConfirmation, TitleSuggestion
 from app.services.translation_service import TranslationService
 from app.ui.agent_settings import AgentSettings
@@ -44,7 +43,6 @@ logger = get_logger()
 _PROVIDER_MAP: Dict[str, type] = {
     "MockProvider": MockTranslationProvider,
     "OllamaCloud": OllamaCloudProvider,
-    "OpenRouter": OpenRouterProvider,
 }
 
 # ---------------------------------------------------------------------------
@@ -52,10 +50,11 @@ _PROVIDER_MAP: Dict[str, type] = {
 # ---------------------------------------------------------------------------
 
 
-class AppView:
+class AppView(ft.Column):
     """Main application view — the single-window Flet UI."""
 
     def __init__(self, page: ft.Page, service: TranslationService) -> None:
+        super().__init__()
         self._page: ft.Page = page
         self._service: TranslationService = service
 
@@ -90,15 +89,15 @@ class AppView:
         self._output_btn: Optional[ft.ElevatedButton] = None
         self._output_folder_text: Optional[ft.Text] = None
 
-        # Build the full layout
-        self._main_column: ft.Column = self.build_layout()
+        # Build the full layout into self
+        self.build_layout()
 
     # ======================================================================
     # Layout construction
     # ======================================================================
 
-    def build_layout(self) -> ft.Column:
-        """Create and return the main Column layout for the entire window."""
+    def build_layout(self) -> None:
+        """Build the complete UI layout as children of this Column."""
         self._file_picker = ft.FilePicker(on_result=self._on_file_picked)
         self._page.overlay.append(self._file_picker)
 
@@ -140,7 +139,6 @@ class AppView:
             options=[
                 ft.dropdown.Option("MockProvider"),
                 ft.dropdown.Option("OllamaCloud"),
-                ft.dropdown.Option("OpenRouter"),
             ],
             on_change=self._on_provider_changed,
             width=240,
@@ -237,35 +235,31 @@ class AppView:
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        # --- Assemble the main column ---
-        return ft.Column(
-            controls=[
-                header,
-                ft.Divider(height=1),
-                file_picker_row,
-                ft.Divider(height=1),
-                provider_settings_row,
-                ft.Divider(height=1),
-                self._language_selector,
-                ft.Divider(height=1),
-                self._agent_settings,
-                ft.Divider(height=1),
-                self._generate_titles_btn,
-                self._title_selectors_container,
-                self._validation_status,
-                action_buttons_row,
-                ft.Divider(height=1),
-                self._progress_view,
-                self._agent_status_grid,
-                ft.Divider(height=1),
-                self._log_view,
-                ft.Divider(height=1),
-                output_row,
-            ],
-            spacing=8,
-            scroll=ft.ScrollMode.AUTO,
-            expand=True,
-        )
+        # --- Assemble the main column (populate self) ---
+        self.controls = [
+            header,
+            ft.Divider(height=1),
+            file_picker_row,
+            ft.Divider(height=1),
+            provider_settings_row,
+            ft.Divider(height=1),
+            self._language_selector,
+            ft.Divider(height=1),
+            self._agent_settings,
+            ft.Divider(height=1),
+            self._generate_titles_btn,
+            self._title_selectors_container,
+            self._validation_status,
+            action_buttons_row,
+            ft.Divider(height=1),
+            self._progress_view,
+            self._agent_status_grid,
+            ft.Divider(height=1),
+            self._log_view,
+            ft.Divider(height=1),
+            output_row,
+        ]
+        self.spacing = 8
 
     # ======================================================================
     # Event handlers
@@ -379,7 +373,7 @@ class AppView:
         # Some providers don't support dynamic model switching after
         # construction; we recreate the provider with the new model.
         provider_type = type(self._provider)
-        if provider_type in (OllamaCloudProvider, OpenRouterProvider):
+        if provider_type in (OllamaCloudProvider,):
             try:
                 new_provider = provider_type(model=model)
                 self._provider = new_provider
@@ -879,7 +873,6 @@ class AppView:
             self._start_btn.disabled = True
 
         self._page.update()
-
     # ======================================================================
     # Helpers
     # ======================================================================
@@ -910,8 +903,3 @@ class AppView:
         self._output_folder_text.italic = True
 
         self._page.update()
-
-    @property
-    def view(self) -> ft.Column:
-        """Return the main view column for embedding in a page/route."""
-        return self._main_column

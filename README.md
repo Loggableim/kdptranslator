@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![Status](https://img.shields.io/badge/status-alpha-orange)
+![Status](https://img.shields.io/badge/status-pre--release-orange)
 
 ---
 
@@ -19,7 +19,9 @@ powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/Log
 
 ## Overview
 
-KDP Translator is a desktop GUI tool built with [Flet](https://flet.dev/) that helps Kindle Direct Publishing authors and publishers localize their eBooks. Load an EPUB, pick one or more target languages, let AI generate localized title suggestions, and translate the full book content — all from a local Windows application.
+KDP Translator is a desktop GUI application built with [Flet](https://flet.dev/) that helps Kindle Direct Publishing authors and publishers localize their eBooks. Load an EPUB, pick one or more target languages, let AI generate localized title suggestions, and translate the full book content — all from a local Windows application.
+
+It runs as a **local GUI application** (not a CLI tool) — all interaction happens through a visual Flet interface. No command-line proficiency required beyond the initial setup.
 
 The application supports multiple translation modes, concurrent agent-based translation for speed, and preserves EPUB structure including covers, CSS, fonts, and navigation.
 
@@ -37,7 +39,7 @@ The application supports multiple translation modes, concurrent agent-based tran
 - **Multi-Agent Translation** — Concurrent translation via a thread-safe agent pool. Configurable number of parallel agents, retry logic, and timeout settings.
 - **Translation Modes** — Choose from sequential, parallel chapters, or parallel chunks processing strategies.
 - **Mock Provider** — Built-in mock provider lets you test the UI workflow without any API key.
-- **OllamaCloud / OpenAI Compatible** — Plug in any OpenAI-compatible API (OllamaCloud, OpenAI, local LLMs via Ollama, etc.).
+- **OllamaCloud / OpenAI Compatible** — Plug in any OpenAI-compatible API (OllamaCloud, OpenRouter, OpenAI, local LLMs via Ollama, etc.).
 - **Structure Preservation** — Cover images, CSS stylesheets, embedded fonts, media files, and TOC/NCX navigation are all preserved in the output EPUB.
 - **Local Desktop Application** — Runs entirely on your Windows machine. No cloud dependency beyond the optional LLM API.
 
@@ -50,18 +52,10 @@ The application supports multiple translation modes, concurrent agent-based tran
 | **GUI Framework** | [Flet](https://flet.dev/) (Python → Flutter) |
 | **EPUB Handling** | [ebooklib](https://github.com/aerkalov/ebooklib) |
 | **HTML Parsing** | [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) + [lxml](https://lxml.de/) |
-| **LLM Provider** | OpenAI-compatible API (OllamaCloud, OpenAI, Ollama, etc.) via [httpx](https://www.python-httpx.org/) |
+| **LLM Provider** | OpenAI-compatible API (OllamaCloud, OpenRouter, OpenAI, Ollama, etc.) via [httpx](https://www.python-httpx.org/) |
 | **Configuration** | [python-dotenv](https://github.com/theskumar/python-dotenv) |
 | **Testing** | [pytest](https://docs.pytest.org/) |
 | **Packaging** | Python 3.12+, `venv` |
-
----
-
-## Screenshots
-
-![KDP Translator Screenshot](https://via.placeholder.com/800x500?text=KDP+Translator+Screenshot)
-
-*Screenshot placeholder — replace with an actual image of the application in action.*
 
 ---
 
@@ -76,7 +70,7 @@ The application supports multiple translation modes, concurrent agent-based tran
 
 ```powershell
 # Clone the repository
-git clone https://github.com/yourusername/kdptranslator.git
+git clone https://github.com/Loggableim/kdptranslator.git
 cd kdptranslator
 
 # Run the installer
@@ -114,30 +108,43 @@ cp .env.example .env            # PowerShell / bash
 
 ## Configuration
 
-Edit the `.env` file in the project root to configure your LLM provider:
+Edit the `.env` file in the project root to configure your LLM provider. The application supports multiple providers:
+
+### OllamaCloud
 
 ```ini
-# Required: Your API key for OllamaCloud or any OpenAI-compatible provider
-OLLAMACLOUD_API_KEY=sk-...
-
-# Optional: Override the API base URL (default: https://api.ollama.cloud)
+OLLAMACLOUD_API_KEY=sk-your-key-here
 OLLAMACLOUD_BASE_URL=https://api.ollama.cloud
-
-# Optional: Model to use (default: llama3.1:70b)
 OLLAMACLOUD_MODEL=llama3.1:70b
+```
 
-# Translation settings
+### OpenRouter
+
+```ini
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=openai/gpt-4o-mini
+```
+
+### OpenAI / Any OpenAI-Compatible API
+
+You can use any provider that offers an OpenAI-compatible endpoint by setting the appropriate `*_API_KEY`, `*_BASE_URL`, and `*_MODEL` environment variables. The provider system is designed to work with any OpenAI-compatible API.
+
+### Mock Provider (No API Key Required)
+
+**Leave `OLLAMACLOUD_API_KEY` and `OPENROUTER_API_KEY` empty**, and the application will automatically fall back to the built-in `MockTranslationProvider`. This lets you explore the full UI, load EPUBs, select languages, and walk through the translation workflow — all without any API key or internet connection. Mock translations return placeholder text so you can verify the pipeline end-to-end.
+
+### Translation Settings (Optional)
+
+```ini
 DEFAULT_MAX_AGENTS=4
 DEFAULT_TRANSLATION_MODE=parallel_chunks
 DEFAULT_MAX_RETRIES=3
 DEFAULT_TIMEOUT_SECONDS=120
 
-# Logging
 LOG_LEVEL=INFO
 LOG_FILE=logs/translate.log
 ```
-
-> **Tip:** Leave `OLLAMACLOUD_API_KEY` empty and the app will use the built-in `MockTranslationProvider` for testing the UI without any API key.
 
 ---
 
@@ -228,6 +235,55 @@ pytest
 ```
 
 Tests are located in the `tests/` directory. The project uses `pytest` as its test framework.
+
+---
+
+## Troubleshooting
+
+### "Python is not installed or not found on PATH"
+
+Download Python 3.12+ from [python.org](https://www.python.org/downloads/) and ensure you check **"Add Python to PATH"** during installation. After installing, restart your terminal and try again.
+
+### Virtual environment creation fails
+
+- Ensure Python 3.12+ is fully installed (try `python --version`).
+- If you have multiple Python versions, the installer tries `python` first, then `python3`.
+- Run `python -m venv .venv` manually to see the exact error.
+
+### pip install fails
+
+- Try upgrading pip first: `python -m pip install --upgrade pip`
+- If a specific package fails to build, ensure you have the [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) installed.
+- Check your internet connection and firewall settings.
+
+### "Flet not found" or "No module named app"
+
+- Ensure the virtual environment is activated: `.venv\Scripts\activate`
+- Re-run `pip install -r requirements.txt` inside the activated venv.
+- Make sure you are in the project root directory (`C:\projekte\kdptranslator\`).
+
+### The app starts but shows errors about API keys
+
+- Leave API keys empty to use the **MockProvider** (placeholder translations, no API needed).
+- For real translations, set `OLLAMACLOUD_API_KEY` or `OPENROUTER_API_KEY` in `.env`.
+- Check that the provider base URL is correct (see Configuration section above).
+
+### How do I reset or reinstall?
+
+Delete the `.venv` folder and re-run `install.ps1`. Your `.env` settings will be preserved.
+
+---
+
+## Known Limitations
+
+- **Windows Only** — Currently tested only on Windows 10/11. Linux and macOS are not yet supported.
+- **Flet-Based GUI** — The UI is rendered via Flet/Flutter, which means the window appearance may differ slightly from native Windows applications.
+- **Large EPUB Files** — Very large EPUBs (10,000+ pages) may take significant time and memory during processing. The chunk-based translation mode helps mitigate this.
+- **API Dependency** — Real translations require an active API key and internet connection to an LLM provider. Translations are only as good as the underlying model.
+- **Mock Provider Limitations** — The mock provider returns placeholder text, not real translations. It is intended for UI testing and workflow validation only.
+- **No Incremental Translation** — If a translation is interrupted, it must be restarted from the beginning. There is no checkpoint/resume feature yet.
+- **Single Format Output** — Only EPUB output is supported. PDF, DOCX, or MOBI export are not available.
+- **Pre-Release Software** — This project is in **pre-release** stage. APIs, features, and configuration may change without notice. Not yet recommended for production use without testing.
 
 ---
 

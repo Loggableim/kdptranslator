@@ -13,7 +13,7 @@ from typing import Callable, List, Optional, Dict
 from app.core.language import get_supported_languages, Language
 
 
-class LanguageSelector(ft.UserControl):
+class LanguageSelector(ft.Column):
     """Checkbox grid for choosing target translation languages.
 
     Parameters
@@ -30,7 +30,9 @@ class LanguageSelector(ft.UserControl):
         self.selected_codes: List[str] = []
         self._checkboxes: Dict[str, ft.Checkbox] = {}
 
-    def build(self) -> ft.Column:
+        self._build_inner()
+
+    def _build_inner(self) -> None:
         """Build the language selector UI."""
         languages = get_supported_languages()
         checkbox_controls: List[ft.Control] = []
@@ -45,18 +47,16 @@ class LanguageSelector(ft.UserControl):
             self._checkboxes[lang.code] = cb
             checkbox_controls.append(cb)
 
-        return ft.Column(
-            controls=[
-                ft.Text("Target Languages", size=16, weight=ft.FontWeight.BOLD),
-                ft.Row(
-                    controls=checkbox_controls,
-                    wrap=True,
-                    spacing=10,
-                    run_spacing=5,
-                ),
-            ],
-            scroll=ft.ScrollMode.AUTO,
-        )
+        self.controls = [
+            ft.Text("Target Languages", size=16, weight=ft.FontWeight.BOLD),
+            ft.Row(
+                controls=checkbox_controls,
+                wrap=True,
+                spacing=10,
+                run_spacing=5,
+            ),
+        ]
+        self.scroll = ft.ScrollMode.AUTO
 
     # ------------------------------------------------------------------
     # Internal handlers

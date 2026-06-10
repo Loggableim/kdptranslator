@@ -18,7 +18,7 @@ from app.services.title_generator import TitleConfirmation, TitleSuggestion
 logger = logging.getLogger(__name__)
 
 
-class TitleSelector(ft.UserControl):
+class TitleSelector(ft.Column):
     """Flet component for selecting and confirming a title per language.
 
     Displays the three suggestion variants from a TitleSuggestion (literal,
@@ -64,72 +64,72 @@ class TitleSelector(ft.UserControl):
         self._custom_field_ref = ft.Ref[ft.TextField]()
         self._confirm_btn_ref = ft.Ref[ft.ElevatedButton]()
 
+        self._build_inner()
+
     # ------------------------------------------------------------------
     # Build
     # ------------------------------------------------------------------
 
-    def build(self) -> ft.Control:
+    def _build_inner(self) -> None:
         """Construct the control tree."""
-        return ft.Column(
-            controls=[
-                # Language header
-                ft.Text(
-                    f"{self.language_name} ({self.language_code})",
-                    size=14,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                # Radio group with the three suggestion variants
-                ft.RadioGroup(
-                    content=ft.Column(
-                        controls=[
-                            ft.Radio(
-                                value="literal",
-                                label=f"Literal: {self.suggestions.literal}",
-                            ),
-                            ft.Radio(
-                                value="market",
-                                label=f"Market Optimized: {self.suggestions.market}",
-                            ),
-                            ft.Radio(
-                                value="seo",
-                                label=f"SEO Optimized: {self.suggestions.seo}",
-                            ),
-                        ],
-                        spacing=4,
-                    ),
-                    value="market",
-                    on_change=self._on_radio_change,
-                ),
-                # Custom title text field
-                ft.TextField(
-                    ref=self._custom_field_ref,
-                    label="Custom Title",
-                    hint_text="Enter a custom title…",
-                    on_change=self._on_custom_title_change,
-                ),
-                # Action row
-                ft.Row(
+        self.controls = [
+            # Language header
+            ft.Text(
+                f"{self.language_name} ({self.language_code})",
+                size=14,
+                weight=ft.FontWeight.BOLD,
+            ),
+            # Radio group with the three suggestion variants
+            ft.RadioGroup(
+                content=ft.Column(
                     controls=[
-                        ft.ElevatedButton(
-                            ref=self._confirm_btn_ref,
-                            text="Confirm Title",
-                            on_click=self._on_confirm,
+                        ft.Radio(
+                            value="literal",
+                            label=f"Literal: {self.suggestions.literal}",
+                        ),
+                        ft.Radio(
+                            value="market",
+                            label=f"Market Optimized: {self.suggestions.market}",
+                        ),
+                        ft.Radio(
+                            value="seo",
+                            label=f"SEO Optimized: {self.suggestions.seo}",
                         ),
                     ],
-                    spacing=8,
+                    spacing=4,
                 ),
-                # Status indicator
-                ft.Text(
-                    ref=self._status_ref,
-                    value="⚠ Not confirmed",
-                    size=12,
-                    italic=True,
-                ),
-                ft.Divider(height=1, color=ft.Colors.GREY_300),
-            ],
-            spacing=8,
-            width=500,
-        )
+                value="market",
+                on_change=self._on_radio_change,
+            ),
+            # Custom title text field
+            ft.TextField(
+                ref=self._custom_field_ref,
+                label="Custom Title",
+                hint_text="Enter a custom title\u2026",
+                on_change=self._on_custom_title_change,
+            ),
+            # Action row
+            ft.Row(
+                controls=[
+                    ft.ElevatedButton(
+                        ref=self._confirm_btn_ref,
+                        text="Confirm Title",
+                        on_click=self._on_confirm,
+                    ),
+                ],
+                spacing=8,
+            ),
+            # Status indicator
+            ft.Text(
+                ref=self._status_ref,
+                value="\u26a0 Not confirmed",
+                size=12,
+                italic=True,
+            ),
+            ft.Divider(height=1, color=ft.Colors.GREY_300),
+        ]
+        self.spacing = 8
+        self.width = 500
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -139,7 +139,7 @@ class TitleSelector(ft.UserControl):
         """Store the selected radio option type."""
         self._selected_type = e.control.value
         logger.debug(
-            "TitleSelector (%s) — radio changed to %r",
+            "TitleSelector (%s) \u2014 radio changed to %r",
             self.language_code,
             self._selected_type,
         )
@@ -158,7 +158,7 @@ class TitleSelector(ft.UserControl):
         elif self._selected_type == "seo":
             selected_title = self.suggestions.seo
         else:
-            selected_title = self._selected_type  # fallback — should not happen
+            selected_title = self._selected_type  # fallback \u2014 should not happen
 
         # If custom title field is non-empty, it takes priority
         custom_text = self._custom_title.strip()
@@ -178,7 +178,7 @@ class TitleSelector(ft.UserControl):
 
         # Update status indicator
         if self._status_ref.current is not None:
-            self._status_ref.current.value = f"✓ Confirmed: {selected_title}"
+            self._status_ref.current.value = f"\u2713 Confirmed: {selected_title}"
             self._status_ref.current.color = ft.Colors.GREEN
             self._status_ref.current.italic = False
             self._status_ref.current.update()
@@ -189,7 +189,7 @@ class TitleSelector(ft.UserControl):
             self._confirm_btn_ref.current.update()
 
         logger.info(
-            "Title confirmed for %s — type=%r title=%r",
+            "Title confirmed for %s \u2014 type=%r title=%r",
             self.language_code,
             selection_type,
             selected_title,

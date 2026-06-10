@@ -13,7 +13,7 @@ from typing import Callable, Optional
 from app.core.config import TranslationConfig
 
 
-class AgentSettings(ft.UserControl):
+class AgentSettings(ft.Column):
     """Form controls for translation-agent configuration.
 
     Parameters
@@ -72,7 +72,9 @@ class AgentSettings(ft.UserControl):
         self._retries_dd: Optional[ft.Dropdown] = None
         self._timeout_dd: Optional[ft.Dropdown] = None
 
-    def build(self) -> ft.Column:
+        self._build_inner()
+
+    def _build_inner(self) -> None:
         """Build the settings form."""
         self._agents_dd = ft.Dropdown(
             label="Parallel Translation Agents",
@@ -118,21 +120,19 @@ class AgentSettings(ft.UserControl):
             on_change=self._on_setting_changed,
         )
 
-        return ft.Column(
-            controls=[
-                ft.Text("Agent Settings", size=16, weight=ft.FontWeight.BOLD),
-                self._agents_dd,
-                ft.Divider(height=1),
-                ft.Text("Translation Mode", size=14),
-                self._mode_radio,
-                ft.Divider(height=1),
-                ft.Row(
-                    controls=[self._retries_dd, self._timeout_dd],
-                    spacing=10,
-                ),
-            ],
-            spacing=10,
-        )
+        self.controls = [
+            ft.Text("Agent Settings", size=16, weight=ft.FontWeight.BOLD),
+            self._agents_dd,
+            ft.Divider(height=1),
+            ft.Text("Translation Mode", size=14),
+            self._mode_radio,
+            ft.Divider(height=1),
+            ft.Row(
+                controls=[self._retries_dd, self._timeout_dd],
+                spacing=10,
+            ),
+        ]
+        self.spacing = 10
 
     # ------------------------------------------------------------------
     # Internal handlers

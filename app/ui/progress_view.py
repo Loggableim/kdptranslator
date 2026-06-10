@@ -27,7 +27,7 @@ _LANGUAGE_COLORS: List[str] = [
 ]
 
 
-class ProgressView(ft.UserControl):
+class ProgressView(ft.Column):
     """Flet component showing translation progress.
 
     Displays:
@@ -56,7 +56,6 @@ class ProgressView(ft.UserControl):
         self._language_texts: Dict[str, ft.Text] = {}
         self._agent_status_column: Optional[ft.Column] = None
         self._queue_stats_text: Optional[ft.Text] = None
-        self._content_column: Optional[ft.Column] = None
 
         # Refs
         self._overall_bar_ref = ft.Ref[ft.ProgressBar]()
@@ -66,11 +65,13 @@ class ProgressView(ft.UserControl):
         self._queue_stats_ref = ft.Ref[ft.Text]()
         self._reset_btn_ref = ft.Ref[ft.ElevatedButton]()
 
+        self._build_inner()
+
     # ------------------------------------------------------------------
     # Build
     # ------------------------------------------------------------------
 
-    def build(self) -> ft.Control:
+    def _build_inner(self) -> None:
         """Construct the control tree."""
         self._overall_bar = ft.ProgressBar(
             ref=self._overall_bar_ref,
@@ -87,7 +88,7 @@ class ProgressView(ft.UserControl):
 
         self._queue_stats_text = ft.Text(
             ref=self._queue_stats_ref,
-            value="Queue: —",
+            value="Queue: \u2014",
             size=12,
             italic=True,
         )
@@ -95,7 +96,7 @@ class ProgressView(ft.UserControl):
         self._agent_status_column = ft.Column(
             ref=self._agent_column_ref,
             controls=[
-                ft.Text("Agents: —", size=12, italic=True),
+                ft.Text("Agents: \u2014", size=12, italic=True),
             ],
             spacing=2,
             scroll=ft.ScrollMode.AUTO,
@@ -144,8 +145,7 @@ class ProgressView(ft.UserControl):
             spacing=4,
         )
 
-        # Store reference to the outer column for potential later use
-        self._content_column = ft.Column(
+        content_column = ft.Column(
             controls=[
                 overall_section,
                 language_section,
@@ -167,7 +167,7 @@ class ProgressView(ft.UserControl):
             width=500,
         )
 
-        return ft.Container(content=self._content_column, padding=8)
+        self.controls = [ft.Container(content=content_column, padding=8)]
 
     # ------------------------------------------------------------------
     # Public update methods
@@ -270,7 +270,7 @@ class ProgressView(ft.UserControl):
 
         if not agents_status:
             self._agent_status_column.controls = [
-                ft.Text("Agents: —", size=12, italic=True),
+                ft.Text("Agents: \u2014", size=12, italic=True),
             ]
             self._agent_status_column.update()
             return
@@ -289,12 +289,12 @@ class ProgressView(ft.UserControl):
 
             # Build a status icon / colour
             status_icon = {
-                "idle": "⚪",
-                "working": "🔄",
-                "retry": "⚠️",
-                "error": "❌",
-                "completed": "✅",
-            }.get(status, "❓")
+                "idle": "\u26aa",
+                "working": "\ud83d\udd04",
+                "retry": "\u26a0\ufe0f",
+                "error": "\u274c",
+                "completed": "\u2705",
+            }.get(status, "\u2753")
 
             parts = [f"{status_icon} {agent_id}: {status}"]
             if lang:
@@ -304,7 +304,7 @@ class ProgressView(ft.UserControl):
             if chunk:
                 parts.append(f"Chk:{chunk}")
             parts.append(f"({round(progress * 100)}%)")
-            parts.append(f"✓{completed} ✗{failed}")
+            parts.append(f"\u2713{completed} \u2717{failed}")
             if error:
                 parts.append(f"ERR:{error[:50]}")
 
@@ -337,8 +337,8 @@ class ProgressView(ft.UserControl):
         pending = stats.get("pending", 0)
 
         self._queue_stats_text.value = (
-            f"Queue: {total} total · {completed} completed · "
-            f"{failed} failed · {pending} pending"
+            f"Queue: {total} total \u00b7 {completed} completed \u00b7 "
+            f"{failed} failed \u00b7 {pending} pending"
         )
         self._queue_stats_text.update()
 
@@ -369,13 +369,13 @@ class ProgressView(ft.UserControl):
         # Agents
         if self._agent_status_column is not None:
             self._agent_status_column.controls = [
-                ft.Text("Agents: —", size=12, italic=True),
+                ft.Text("Agents: \u2014", size=12, italic=True),
             ]
             self._agent_status_column.update()
 
         # Queue stats
         if self._queue_stats_text is not None:
-            self._queue_stats_text.value = "Queue: —"
+            self._queue_stats_text.value = "Queue: \u2014"
             self._queue_stats_text.update()
 
         # Hide reset button
@@ -395,6 +395,5 @@ class ProgressView(ft.UserControl):
 
     def set_visible(self, visible: bool) -> None:
         """Show or hide the entire progress view."""
-        if self._content_column is not None:
-            self._content_column.visible = visible
-            self.update()
+        self.visible = visible
+        self.update()

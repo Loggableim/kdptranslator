@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 
 from bs4 import BeautifulSoup, NavigableString
 from ebooklib import epub
+import ebooklib
 
 from app.core.logger import get_logger
 
@@ -293,12 +294,22 @@ class EpubProcessor:
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
 
-        # 4. Write the EPUB.
+        # 4. Fix TOC items: ensure all Link objects have a uid (ebooklib
+        #    requires uid for NCX generation, but read_epub may lose it).
+        self._fix_toc_uids()
+
+        # 5. Write the EPUB.
         epub.write_epub(str(out), self._book, {})
 
         resolved = str(out.resolve())
         logger.info("EPUB saved to %s", resolved)
         return resolved
+
+    def _fix_toc_uids(self) -> None:
+        """Assign unique uids to TOC Link objects that lost them during read."""
+        if not hasattr(self._book, 'toc') or not self._book.toc:
+            return
+        _fix_link_uids(self._book.toc)
 
     def analyse(self) -> EpubAnalysis:
         """Return a full analysis of the loaded EPUB.
@@ -516,6 +527,15 @@ class EpubProcessor:
         if self._book is None:
             return
 
+        # --- Clear existing DC metadata entries that we will replace ----
+        # ebooklib's set_title/set_language APPEND rather than replace,
+        # so we must clear old entries first.
+        dc_ns = "http://purl.org/dc/elements/1.1/"
+        if dc_ns in self._book.metadata:
+            dc_meta = self._book.metadata[dc_ns]
+            dc_meta.pop("title", None)
+            dc_meta.pop("language", None)
+
         # --- Core DC fields ------------------------------------------------
         self._book.set_title(title)
         self._book.set_language(language)
@@ -605,3 +625,22 @@ def generate_output_filename(
     if len(safe) > 80:
         safe = safe[:80]
     return f"{safe}{suffix}_{language}.epub"
+
+
+def _fix_link_uids(toc_items: list) -> None:
+    """Recursively assign uids to epub.Link objects that have None uid."""
+    _counter = [0]
+
+    def _fix(items):
+        for item in items:
+            if isinstance(item, epub.Link):
+                if item.uid is None:
+                    _counter[0] += 1
+                    item.uid = f"auto-toc-{_counter[0]}"
+            elif isinstance(item, tuple) and len(item) >= 2:
+                # (Link/Section, children) format
+                _fix(item[1] if len(item) > 1 else [])
+            elif isinstance(item, list):
+                _fix(item)
+
+    _fix(toc_items)
