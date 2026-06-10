@@ -9,6 +9,14 @@
 
 ---
 
+## One-Line Install
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/Loggableim/kdptranslator/master/install.ps1 | iex"
+```
+
+---
+
 ## Overview
 
 KDP Translator is a desktop GUI tool built with [Flet](https://flet.dev/) that helps Kindle Direct Publishing authors and publishers localize their eBooks. Load an EPUB, pick one or more target languages, let AI generate localized title suggestions, and translate the full book content — all from a local Windows application.
