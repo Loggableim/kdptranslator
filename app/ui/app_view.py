@@ -26,6 +26,7 @@ from app.core.validation import are_all_titles_confirmed, is_translation_ready
 from app.providers.base import TranslationProvider
 from app.providers.mock import MockTranslationProvider
 from app.providers.ollamacloud import OllamaCloudProvider
+from app.providers.openrouter import OpenRouterProvider
 from app.services.title_generator import TitleConfirmation, TitleSuggestion
 from app.services.translation_service import TranslationService
 from app.ui.agent_settings import AgentSettings
@@ -43,6 +44,7 @@ logger = get_logger()
 _PROVIDER_MAP: Dict[str, type] = {
     "MockProvider": MockTranslationProvider,
     "OllamaCloud": OllamaCloudProvider,
+    "OpenRouter": OpenRouterProvider,
 }
 
 # ---------------------------------------------------------------------------
@@ -138,6 +140,7 @@ class AppView:
             options=[
                 ft.dropdown.Option("MockProvider"),
                 ft.dropdown.Option("OllamaCloud"),
+                ft.dropdown.Option("OpenRouter"),
             ],
             on_change=self._on_provider_changed,
             width=240,
@@ -335,7 +338,7 @@ class AppView:
             if provider_class is MockTranslationProvider:
                 new_provider = MockTranslationProvider()
             else:
-                new_provider = OllamaCloudProvider()
+                new_provider = provider_class()
 
             self._provider = new_provider
 
@@ -373,11 +376,12 @@ class AppView:
         """Handle model dropdown change — update provider model if applicable."""
         model = self._model_dropdown.value
         logger.info("Model changed to: %s", model)
-        # OllamaCloudProvider doesn't support dynamic model switching after
+        # Some providers don't support dynamic model switching after
         # construction; we recreate the provider with the new model.
-        if isinstance(self._provider, OllamaCloudProvider):
+        provider_type = type(self._provider)
+        if provider_type in (OllamaCloudProvider, OpenRouterProvider):
             try:
-                new_provider = OllamaCloudProvider(model=model)
+                new_provider = provider_type(model=model)
                 self._provider = new_provider
                 self._service = TranslationService(
                     provider=new_provider,
